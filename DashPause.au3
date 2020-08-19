@@ -1,3 +1,17 @@
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Version=Beta
+#AutoIt3Wrapper_Icon=icon.ico
+#AutoIt3Wrapper_Compile_Both=y
+#AutoIt3Wrapper_UseX64=y
+#AutoIt3Wrapper_Res_Comment=Compiled 8/18/2020 @ 9:50 EST
+#AutoIt3Wrapper_Res_Description=Beat Saber Dash Pause
+#AutoIt3Wrapper_Res_Fileversion=0.1.0.0
+#AutoIt3Wrapper_Res_LegalCopyright=Robert Maehl, using LGPL 3 License
+#AutoIt3Wrapper_Res_Language=1033
+#AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
+#AutoIt3Wrapper_Run_Au3Stripper=y
+#Au3Stripper_Parameters=/pe /so
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include "WinHTTP.au3"
 
 #include <WinAPI.au3> ; _WinAPI_GetLastError
