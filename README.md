@@ -4,6 +4,7 @@
 
 ### Usage
 
-1. Run DashPause.exe
-2. Launch Beat Saber
-3. DashPause will automatically close with Beat Saber
+1. Install [DataPuller](https://github.com/kOFReadie/DataPuller)
+2. Run DashPause.exe
+3. Launch Beat Saber
+4. DashPause will automatically close with Beat Saber
