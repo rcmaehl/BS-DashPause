@@ -4,6 +4,6 @@
 
 ### Usage
 
-* Run DashPause.exe
-* Launch Beat Saber
-* DashPause will automatically close with Beat Saber
+1. Run DashPause.exe
+2. Launch Beat Saber
+3. DashPause will automatically close with Beat Saber
