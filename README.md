@@ -16,7 +16,7 @@
 
 ### Compiling yourself
 
-1. [Clone this repo](https://github.com/rcmaehl/BS-DashPause.git)
+1. [Clone this repo](https://github.com/rcmaehl/BS-DashPause/archive/master.zip)
 2. Download and Install [AutoIt](https://www.autoitscript.com/site/autoit/downloads/)
 3. Right-Click the .au3 file and Select *Compile with Options*
 
