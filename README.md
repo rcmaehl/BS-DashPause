@@ -1,5 +1,5 @@
 # BSDashPause
- Pauses Dash Functions (Home, Screenshot, etc) while In Song
+ Pauses Dash Functions (Home, Screenshot, etc) while In Song | Requires [DataPuller](https://github.com/kOFReadie/DataPuller)
 
 
 ### Usage
