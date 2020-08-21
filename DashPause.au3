@@ -3,9 +3,9 @@
 #AutoIt3Wrapper_Icon=icon.ico
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=Compiled 8/18/2020 @ 9:50 EST
+#AutoIt3Wrapper_Res_Comment=Compiled 8/20/2020 @ 23:00 EST
 #AutoIt3Wrapper_Res_Description=Beat Saber Dash Pause
-#AutoIt3Wrapper_Res_Fileversion=0.1.0.0
+#AutoIt3Wrapper_Res_Fileversion=0.2.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Robert Maehl, using LGPL 3 License
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
@@ -38,12 +38,12 @@ Func Main()
 	Local $bLevelPaused = False
 
 	If $bDev Then
-		Local $hGUI = GUICreate("Dash Pause", 640, 480, -1, -1, BitOr($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
+		Local $hGUI = GUICreate("DashPause", 640, 480, -1, -1, BitOr($WS_MINIMIZEBOX, $WS_CAPTION, $WS_SYSMENU))
 		Local $hData = GUICtrlCreateEdit("", 0, 20, 640, 460, BitOR($ES_MULTILINE, $WS_VSCROLL, $ES_AUTOVSCROLL, $ES_READONLY))
 		GUISetState(@SW_SHOW, $hGUI)
 	EndIf
 
-	TraySetToolTip("Dash Pause")
+	TraySetToolTip("DashPause")
 
 	While 1
 
@@ -64,7 +64,7 @@ Func Main()
 				EndIf
 				$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller")
 				If Not $hSocket Then
-					TraySetToolTip("Dash Pause")
+					TraySetToolTip("DashPause")
 					ContinueLoop
 				EndIf
 				TraySetToolTip("Connected")
