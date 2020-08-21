@@ -59,7 +59,7 @@ Func Main()
 				TraySetToolTip("Connecting...")
 				$sLocation = _WinAPI_GetProcessFileName(ProcessExists("Beat Saber.exe"))
 				If Not FileExists(StringReplace($sLocation, "Beat Saber.exe", "Plugins\DataPuller.dll")) Then
-					MsgBox($MB_OK+$MB_ICONERROR+$MB_TOPMOST, "Dash Pause", "The required plugin DataPuller was not found! Dash Pause will now close")
+					MsgBox($MB_OK+$MB_ICONERROR+$MB_TOPMOST, "DashPause", "The required plugin DataPuller was not found! DashPause will now close.")
 					Exit 1
 				EndIf
 				$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller")
@@ -77,7 +77,7 @@ Func Main()
 				TraySetToolTip("Disconnected")
 				$bRunning = False
 				$hSocket = 0
-;~ 				Exit
+				Exit
 
 			Case $bRunning
 				$sData =  _GetData($hSocket, $iTimeout)
