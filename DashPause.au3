@@ -15,6 +15,7 @@
 #include "WinHTTP.au3"
 
 #include <WinAPI.au3> ; _WinAPI_GetLastError
+#include <WinAPIProc.au3> ; _WinAPI_GetProcessFileName
 #include <String.au3> ; _HexToString
 #include <EditConstants.au3>
 #include <GUIConstantsEx.au3>
@@ -31,6 +32,8 @@ Func Main()
 	Local $bRunning = False
 	Local $bSuspended = False
 
+	Local $sLocation = ""
+
 	Local $bInLevel = False
 	Local $bLevelPaused = False
 
@@ -40,6 +43,8 @@ Func Main()
 		GUISetState(@SW_SHOW, $hGUI)
 	EndIf
 
+	TraySetToolTip("Dash Pause")
+
 	While 1
 
 		$hMsg = GUIGetMsg()
@@ -48,14 +53,23 @@ Func Main()
 
 			Case $hMsg = $GUI_EVENT_CLOSE
 				GUIDelete($hGUI)
-				TCPShutdown()
 				Exit
 
 			Case ProcessExists("Beat Saber.exe") and $hSocket = 0
 				TraySetToolTip("Connecting...")
+				$sLocation = _WinAPI_GetProcessFileName(ProcessExists("Beat Saber.exe"))
+				If Not FileExists(StringReplace($sLocation, "Beat Saber.exe", "Plugins\DataPuller.dll")) Then
+					MsgBox($MB_OK+$MB_ICONERROR+$MB_TOPMOST, "Dash Pause", "The required plugin DataPuller was not found! Dash Pause will now close")
+					Exit 1
+				EndIf
 				$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller")
+				If Not $hSocket Then
+					TraySetToolTip("Dash Pause")
+					ContinueLoop
+				EndIf
 				TraySetToolTip("Connected")
 				$bRunning = True
+				ConsoleWrite($sLocation & @CRLF)
 
 			Case $hSocket <> 0 And Not ProcessExists("Beat Saber.exe")
 				TraySetToolTip("Disconnecting...")
@@ -63,9 +77,11 @@ Func Main()
 				TraySetToolTip("Disconnected")
 				$bRunning = False
 				$hSocket = 0
+;~ 				Exit
 
 			Case $bRunning
 				$sData =  _GetData($hSocket, $iTimeout)
+				If Not $sData Then ContinueLoop
 				If $bDev Then GUICtrlSetData($hData, $sData)
 				$bInLevel = _StringBetween($sData, '"InLevel": ', ",")[0]
 				$bLevelPaused = _StringBetween($sData, '"LevelPaused": ', ",")[0]
@@ -123,7 +139,7 @@ Func _GetData($hWebSocket, $iTimeout)
                 $iBytesRead, _
                 $iBufferType)
         If @error Or $iError <> 0 Then
-            ConsoleWrite("WebSocketReceive error" & @CRLF)
+            ConsoleWrite("WebSocketReceive error: " & @error & " - " & $iError & @CRLF)
             Return False
         EndIf
 
