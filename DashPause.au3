@@ -185,6 +185,7 @@ Func _LogOpen($sLocation)
 				MsgBox($MB_OK+$MB_ICONERROR+$MB_TOPMOST, "DashPause", "DashPause is unable to create a log file directory and will not log diagnostic data.")
 				Return False
 			EndIf
+			ContinueCase
 
 		Case Not FileExists($sLocation & "\Logs\BS-DashPause\latest.log")
 			Local $hLogHandle = FileOpen($sLocation & "\Logs\BS-DashPause\latest.log", $FO_APPEND+$FO_CREATEPATH)
@@ -202,6 +203,8 @@ Func _LogOpen($sLocation)
 
 	EndSelect
 
+	Return $hLogHandle
+
 EndFunc
 
 Func _Log($sLocation, $sMessage)
@@ -210,7 +213,7 @@ Func _Log($sLocation, $sMessage)
 
 	If $hLogHandle = 0 Then Return False
 
-	If Not FileWrite($hLogHandle, @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & $sMessage) Then
+	If Not FileWrite($hLogHandle, @YEAR & @MON & @MDAY & "@" & @HOUR & @MIN & @SEC & ": " & $sMessage) Then
 		MsgBox($MB_OK+$MB_ICONERROR+$MB_TOPMOST, "DashPause", "DashPause is unable to write to its' log file and will not log diagnostic data.")
 		_LogClose($hLogHandle)
 		Return False
