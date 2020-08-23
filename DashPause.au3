@@ -12,7 +12,7 @@
 #AutoIt3Wrapper_Run_Au3Stripper=y
 #Au3Stripper_Parameters=/pe /so
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#include "WinHTTP.au3"
+#include "includes\WinHTTP.au3"
 
 #include <WinAPI.au3> ; _WinAPI_GetLastError
 #include <WinAPIProc.au3> ; _WinAPI_GetProcessFileName
