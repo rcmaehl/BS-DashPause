@@ -1,11 +1,9 @@
 # BSDashPause
  Pauses Dash Functions (Home, Screenshot, etc) while In Song | Requires [DataPuller](https://github.com/kOFReadie/DataPuller) | [Download Under Releases](https://github.com/rcmaehl/BS-DashPause/releases)
 
-## BS-DashPause is not currently compatible with DataPuller 1.0, only 0.0.3
-
 ### Usage
 
-1. Install [DataPuller 0.0.3](https://github.com/kOFReadie/DataPuller/releases/tag/0.0.3)
+1. Install [DataPuller](https://github.com/kOFReadie/DataPuller/releases/)
 2. [Download BS-DashPause](https://github.com/rcmaehl/BS-DashPause/releases)
 3. Run DashPause.exe
 4. DashPause will appear in your system tray
