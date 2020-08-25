@@ -3,9 +3,9 @@
 #AutoIt3Wrapper_Icon=icon.ico
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=Compiled 8/20/2020 @ 23:00 EST
+#AutoIt3Wrapper_Res_Comment=Compiled 8/25/2020 @ 23:00 EST
 #AutoIt3Wrapper_Res_Description=Beat Saber Dash Pause
-#AutoIt3Wrapper_Res_Fileversion=0.2.0.0
+#AutoIt3Wrapper_Res_Fileversion=0.3.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Robert Maehl, using LGPL 3 License
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
@@ -18,9 +18,12 @@
 #include <WinAPIProc.au3> ; _WinAPI_GetProcessFileName
 #include <String.au3> ; _HexToString
 #include <EditConstants.au3>
-#include <FileConstants.au3> ; _LogOpen()
+#include <FileConstants.au3> ; _LogOpen(), FileGetVersion
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
+
+Global $sVer = "0.3"
+Global $sLocation = ""
 
 Main()
 
@@ -33,7 +36,6 @@ Func Main()
 	Local $bRunning = False
 	Local $bSuspended = False
 
-	Local $sLocation = ""
 	Local $hLogHandle = ""
 
 	Local $bInLevel = False
@@ -61,13 +63,25 @@ Func Main()
 				TraySetToolTip("Connecting...")
 				If $sLocation <> StringReplace(_WinAPI_GetProcessFileName(ProcessExists("Beat Saber.exe")), "Beat Saber.exe", "") Then
 					$sLocation = StringReplace(_WinAPI_GetProcessFileName(ProcessExists("Beat Saber.exe")), "Beat Saber.exe", "")
-					_Log($sLocation, "Got " & $sLocation & " as Beat Saber install location" & @CRLF)
+					_Log($sLocation, "Got " & $sLocation & " as Beat Saber install location")
 				EndIf
 				If Not FileExists($sLocation & "Plugins\DataPuller.dll") Then
 					MsgBox($MB_OK+$MB_ICONERROR+$MB_TOPMOST, "DashPause", "The required plugin DataPuller was not found! DashPause will now close.")
+					_Log($sLocation, "[FATAL] DataPuller was not found in " & $sLocation & "\Plugins")
 					Exit 1
 				EndIf
-				$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller")
+				ConsoleWrite(FileGetVersion($sLocation & "Plugins\DataPuller.dll", $FV_FILEVERSION) & @CRLF)
+				Switch FileGetVersion($sLocation & "Plugins\DataPuller.dll", $FV_FILEVERSION)
+
+					Case "0.0.1", "0.0.2", "0.0.3"
+						_Log($sLocation, "Found DataPuller Version <= 0.0.3, Linking to 127.0.0.1/BSDataPuller")
+						$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller")
+
+					Case Else
+						_Log($sLocation, "Found DataPuller Version >= 1.0, Linking to 127.0.0.1/BSDataPuller/LiveData")
+						$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller/LiveData")
+
+				EndSwitch
 				If Not $hSocket Then
 					TraySetToolTip("DashPause")
 					ContinueLoop
@@ -78,6 +92,7 @@ Func Main()
 
 			Case $hSocket <> 0 And Not ProcessExists("Beat Saber.exe")
 				TraySetToolTip("Disconnecting...")
+				_Log($sLocation, "Shutting down with Beat Saber")
 				_StopListener($hSocket)
 				TraySetToolTip("Disconnected")
 				$bRunning = False
@@ -147,7 +162,7 @@ Func _GetData($hWebSocket, $iTimeout)
                 $iBytesRead, _
                 $iBufferType)
         If @error Or $iError <> 0 Then
-            ConsoleWrite("WebSocketReceive error: " & @error & " - " & $iError & @CRLF)
+            _Log($sLocation, "[ERROR] Unable to recieve data from WebSocket: " & @error & " - " & $iError)
             Return False
         EndIf
 
@@ -163,7 +178,7 @@ Func _GetData($hWebSocket, $iTimeout)
     ; We expected server just to echo single binary message.
 
     If $iBufferType <> $WINHTTP_WEB_SOCKET_UTF8_MESSAGE_BUFFER_TYPE Then
-        ConsoleWrite("Unexpected buffer type" & @CRLF)
+		_Log($sLocation, "[ERROR] Unexpected buffer type from WebSocket")
         $iError = $ERROR_INVALID_PARAMETER
         Return False
     EndIf
@@ -213,7 +228,7 @@ Func _Log($sLocation, $sMessage)
 
 	If $hLogHandle = 0 Then Return False
 
-	If Not FileWrite($hLogHandle, @YEAR & @MON & @MDAY & "@" & @HOUR & @MIN & @SEC & ": " & $sMessage) Then
+	If Not FileWrite($hLogHandle, @YEAR & @MON & @MDAY & "@" & @HOUR & @MIN & @SEC & ": " & $sMessage & @CRLF) Then
 		MsgBox($MB_OK+$MB_ICONERROR+$MB_TOPMOST, "DashPause", "DashPause is unable to write to its' log file and will not log diagnostic data.")
 		_LogClose($hLogHandle)
 		Return False
@@ -268,7 +283,7 @@ Func _SendData($hWebSocket, $sData) ; Why are you using this <_<
 		$WINHTTP_WEB_SOCKET_BINARY_MESSAGE_BUFFER_TYPE, _
 		$sData)
     If @error Or $iError <> 0 Then
-        ConsoleWrite("WebSocketSend error" & @CRLF)
+        _Log($sLocation, "[ERROR] Unable to send requested data to WebSocket")
         Return False
     EndIf
 	Return True
@@ -278,24 +293,24 @@ Func _StartListener($sIP = "127.0.0.1", $iPort = 1337, $sPath = "")
 
 	Local Const $WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET = 114
 
-    $hOpen = _WinHttpOpen("DashPause 0.1", $WINHTTP_ACCESS_TYPE_DEFAULT_PROXY)
+    $hOpen = _WinHttpOpen("DashPause " & $sVer, $WINHTTP_ACCESS_TYPE_DEFAULT_PROXY)
     If $hOpen = 0 Then
         $iError = _WinAPI_GetLastError()
-        ConsoleWrite("Open error" & @CRLF)
+        _Log($sLocation, "[ERROR] Unable to Open a Connection")
         Return False
     EndIf
 
     $hConnect = _WinHttpConnect($hOpen, $sIP, $iPort)
     If $hConnect = 0 Then
         $iError = _WinAPI_GetLastError()
-        ConsoleWrite("Connect error" & @CRLF)
+        _Log($sLocation, "[ERROR] Unable to Connect to " & $sIP & ":" & $iPort)
         Return False
     EndIf
 
     $hRequest = _WinHttpOpenRequest($hConnect, "GET", $sPath, "")
     If $hRequest = 0 Then
         $iError = _WinAPI_GetLastError()
-        ConsoleWrite("OpenRequest error" & @CRLF)
+        _Log($sLocation, "[ERROR] Error Getting data from " & $sIP & ":" & $iPort)
         Return False
     EndIf
 
@@ -304,7 +319,7 @@ Func _StartListener($sIP = "127.0.0.1", $iPort = 1337, $sPath = "")
     Local $fStatus = _WinHttpSetOptionNoParams($hRequest, $WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET)
     If Not $fStatus Then
         $iError = _WinAPI_GetLastError()
-        ConsoleWrite("SetOption error" & @CRLF)
+        _Log($sLocation, "[ERROR] Error Preparing upgrade from TCP to WebSocket")
         Return False
     EndIf
 
@@ -314,31 +329,32 @@ Func _StartListener($sIP = "127.0.0.1", $iPort = 1337, $sPath = "")
     $fStatus = _WinHttpSendRequest($hRequest)
     If Not $fStatus Then
         $iError = _WinAPI_GetLastError()
-        ConsoleWrite("SendRequest error" & @CRLF)
+        _Log($sLocation, "[ERROR] Unable to Start WebSocket handshake")
         Return False
     EndIf
 
     $fStatus = _WinHttpReceiveResponse($hRequest)
     If Not $fStatus Then
         $iError = _WinAPI_GetLastError()
-        ConsoleWrite("SendRequest error" & @CRLF)
+        _Log($sLocation, "[ERROR] Unable to Complete WebSocket handshake")
         Return False
     EndIf
 
     ; Application should check what is the HTTP status code returned by the server and behave accordingly.
     ; WinHttpWebSocketCompleteUpgrade will fail if the HTTP status code is different than 101.
 
+
     $hWebSocket = _WinHttpWebSocketCompleteUpgrade($hRequest, 0)
     If $hWebSocket = 0 Then
         $iError = _WinAPI_GetLastError()
-        ConsoleWrite("WebSocketCompleteUpgrade error" & @CRLF)
+        _Log($sLocation, "[ERROR] Unable to Upgrade from TCP to WebSocket")
         Return False
     EndIf
 
     _WinHttpCloseHandle($hRequest)
     $hRequestHandle = 0
 
-    ConsoleWrite("Succesfully upgraded to websocket protocol" & @CRLF)
+    _Log($sLocation, "Succesfully Connected and Upgraded to WebSocket")
 	Return $hWebSocket
 EndFunc
 
@@ -349,7 +365,7 @@ Func _StopListener($hWebSocket)
     $iError = _WinHttpWebSocketClose($hWebSocket, _
             $WINHTTP_WEB_SOCKET_SUCCESS_CLOSE_STATUS)
     If @error Or $iError <> 0 Then
-        ConsoleWrite("WebSocketClose error" & @CRLF)
+        _Log($sLocation, "[ERROR] Unable to Close WebSocket")
         Return False
     EndIf
 
@@ -363,7 +379,7 @@ Func _StopListener($hWebSocket)
             $iReasonLengthConsumed, _
             $tCloseReasonBuffer)
     If @error Or $iError <> 0 Then
-        ConsoleWrite("QueryCloseStatus error" & @CRLF)
+        _Log($sLocation, "[ERROR] Unable to Check status of WebSocket closure")
         Return False
     EndIf
 
