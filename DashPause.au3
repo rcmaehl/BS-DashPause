@@ -3,7 +3,7 @@
 #AutoIt3Wrapper_Icon=icon.ico
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=Compiled 8/25/2020 @ 23:00 EST
+#AutoIt3Wrapper_Res_Comment=Compiled 8/25/2020 @ 13:15 EST
 #AutoIt3Wrapper_Res_Description=Beat Saber Dash Pause
 #AutoIt3Wrapper_Res_Fileversion=0.3.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Robert Maehl, using LGPL 3 License
