@@ -1,5 +1,10 @@
 # BSDashPause
- Pauses Dash Functions (Home, Screenshot, etc) while In Song | Requires [DataPuller](https://github.com/kOFReadie/DataPuller) | [Download Under Releases](https://github.com/rcmaehl/BS-DashPause/releases)
+Pauses Dash Functions (Home, Screenshot, etc) while In Song | Requires [DataPuller](https://github.com/kOFReadie/DataPuller) | [Download Under Releases](https://github.com/rcmaehl/BS-DashPause/releases)
+
+## Platform Support
+| HTC | SteamVR | Oculus (Android) | Oculus (Windows) | Windows Mixed Reality
+|---|---|---|---|---|
+| **See SteamVR** | *In Beta* | ❌ Not Compatible | ✔ **Working** | *In Beta*
 
 ### Usage
 
