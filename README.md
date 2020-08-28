@@ -4,7 +4,7 @@ Pauses Dash Functions (Home, Screenshot, etc) while In Song | Requires [DataPull
 ## Platform Support
 | HTC | SteamVR | Oculus (Android) | Oculus (Windows) | Windows Mixed Reality
 |---|---|---|---|---|
-| **See SteamVR** | *In Progress* | ❌ Not Compatible | ✔ **Working** | *In Progress*
+| **See SteamVR** | *In Beta* | ❌ Not Compatible | ✔ **Working** | *In Beta*
 
 ### Usage
 
