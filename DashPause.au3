@@ -3,9 +3,9 @@
 #AutoIt3Wrapper_Icon=icon.ico
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=Compiled 8/25/2020 @ 13:15 EST
+#AutoIt3Wrapper_Res_Comment=Compiled 8/28/2020 @ 19:15 EST
 #AutoIt3Wrapper_Res_Description=Beat Saber Dash Pause
-#AutoIt3Wrapper_Res_Fileversion=0.3.0.0
+#AutoIt3Wrapper_Res_Fileversion=0.4.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Robert Maehl, using LGPL 3 License
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
@@ -22,7 +22,7 @@
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
 
-Global $sVer = "0.3"
+Global $sVer = "0.4"
 Global $sLocation = ""
 
 Main()
@@ -70,16 +70,17 @@ Func Main()
 					_Log($sLocation, "[FATAL] DataPuller was not found in " & $sLocation & "\Plugins")
 					Exit 1
 				EndIf
-				ConsoleWrite(FileGetVersion($sLocation & "Plugins\DataPuller.dll", $FV_FILEVERSION) & @CRLF)
 				Switch FileGetVersion($sLocation & "Plugins\DataPuller.dll", $FV_FILEVERSION)
 
 					Case "0.0.1", "0.0.2", "0.0.3"
 						_Log($sLocation, "Found DataPuller Version <= 0.0.3, Linking to 127.0.0.1/BSDataPuller")
 						$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller")
+						If $hSocket = 0 Then Sleep(3000)
 
 					Case Else
 						_Log($sLocation, "Found DataPuller Version >= 1.0, Linking to 127.0.0.1/BSDataPuller/LiveData")
 						$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller/LiveData")
+						If $hSocket = 0 Then Sleep(3000)
 
 				EndSwitch
 				If Not $hSocket Then
@@ -101,7 +102,7 @@ Func Main()
 				Exit
 
 			Case $bRunning
-				$sData =  _GetData($hSocket, $iTimeout)
+				$sData =  _ReceiveData($hSocket, $iTimeout)
 				If Not $sData Then ContinueLoop
 				If $bDev Then GUICtrlSetData($hData, $sData)
 				$bInLevel = _StringBetween($sData, '"InLevel": ', ",")[0]
@@ -109,17 +110,25 @@ Func Main()
 				If $bInLevel = "true" And $bLevelPaused = "false" Then
 					If Not $bSuspended Then
 						ConsoleWrite("Suspending" & @CRLF)
-						_ProcessSuspend("OculusDash.exe")
-						_ProcessSuspend("VRCompositor.exe")
-						_ProcessSuspend("VRDashboard.exe")
+						_ProcessSuspend("Cortanalistenui.exe") ; WMR
+						_ProcessSuspend("DesktopView.exe") ; WMR
+						_ProcessSuspend("EnvironmentsApp.exe") ; WMR
+						_ProcessSuspend("OculusDash.exe") ; Oculus
+						_ProcessSuspend("VRCompositor.exe") ; SteamVR
+						_ProcessSuspend("VRDashboard.exe") ; SteamVR
+						_ProcessSuspend("VRServer.exe") ; SteamVR
 						$bSuspended = True
 					EndIf
 				ElseIf $bInLevel = "false" Then
 					If $bSuspended Then
 						ConsoleWrite("Resuming" & @CRLF)
-						_ProcessResume("OculusDash.exe")
-						_ProcessResume("VRCompositor.exe")
-						_ProcessResume("VRDashboard.exe")
+						_ProcessResume("Cortanalistenui.exe") ; WMR
+						_ProcessResume("DesktopView.exe") ; WMR
+						_ProcessResume("EnvironmentsApp.exe") ; WMR
+						_ProcessResume("OculusDash.exe") ; Oculus
+						_ProcessResume("VRCompositor.exe") ; SteamVR
+						_ProcessResume("VRDashboard.exe") ; SteamVR
+						_ProcessResume("VRServer.exe") ; SteamVR
 						$bSuspended = False
 					EndIf
 				EndIf
@@ -130,60 +139,6 @@ Func Main()
 		EndSelect
 
 	WEnd
-
-EndFunc
-
-Func _GetData($hWebSocket, $iTimeout)
-
-	Local $hTimer = TimerInit()
-
-	Local Const $WINHTTP_WEB_SOCKET_BINARY_MESSAGE_BUFFER_TYPE = 0
-	Local Const $WINHTTP_WEB_SOCKET_BINARY_FRAGMENT_BUFFER_TYPE = 1
-	Local Const $WINHTTP_WEB_SOCKET_UTF8_MESSAGE_BUFFER_TYPE = 2
-	Local Const $WINHTTP_WEB_SOCKET_UTF8_FRAGMENT_BUFFER_TYPE = 3
-
-	Local Const $ERROR_NOT_ENOUGH_MEMORY = 8
-	Local Const $ERROR_INVALID_PARAMETER = 87
-
-    Local $iBufferLen = 1024
-    Local $tBuffer = 0, $bRecv = Binary("")
-
-    Local $iBytesRead = 0, $iBufferType = 3
-    Do
-        If $iBufferLen = 0 Then
-            $iError = $ERROR_NOT_ENOUGH_MEMORY
-            Return False
-        EndIf
-
-        $tBuffer = DllStructCreate("byte[" & $iBufferLen & "]")
-
-        $iError = _WinHttpWebSocketReceive($hWebSocket, _
-                $tBuffer, _
-                $iBytesRead, _
-                $iBufferType)
-        If @error Or $iError <> 0 Then
-            _Log($sLocation, "[ERROR] Unable to recieve data from WebSocket: " & @error & " - " & $iError)
-            Return False
-        EndIf
-
-        ; If we receive just part of the message restart the receive operation.
-
-        $bRecv &= BinaryMid(DllStructGetData($tBuffer, 1), 1, $iBytesRead)
-        $tBuffer = 0
-
-        $iBufferLen -= $iBytesRead
-		;If TimerDiff($hTimer) > $iTimeout Then Return False
-    Until $iBufferType <> $WINHTTP_WEB_SOCKET_UTF8_FRAGMENT_BUFFER_TYPE
-
-    ; We expected server just to echo single binary message.
-
-    If $iBufferType <> $WINHTTP_WEB_SOCKET_UTF8_MESSAGE_BUFFER_TYPE Then
-		_Log($sLocation, "[ERROR] Unexpected buffer type from WebSocket")
-        $iError = $ERROR_INVALID_PARAMETER
-        Return False
-    EndIf
-
-	Return _HexToString($bRecv)
 
 EndFunc
 
@@ -273,6 +228,59 @@ Func _ProcessResume($sProcess)
 		SetError(2)
 		Return 0
 	EndIf
+EndFunc
+
+Func _ReceiveData($hWebSocket, $iTimeout)
+
+	Local $hTimer = TimerInit()
+
+	Local Const $WINHTTP_WEB_SOCKET_BINARY_MESSAGE_BUFFER_TYPE = 0
+	Local Const $WINHTTP_WEB_SOCKET_BINARY_FRAGMENT_BUFFER_TYPE = 1
+	Local Const $WINHTTP_WEB_SOCKET_UTF8_MESSAGE_BUFFER_TYPE = 2
+	Local Const $WINHTTP_WEB_SOCKET_UTF8_FRAGMENT_BUFFER_TYPE = 3
+
+	Local Const $ERROR_NOT_ENOUGH_MEMORY = 8
+	Local Const $ERROR_INVALID_PARAMETER = 87
+
+    Local $iBufferLen = 1024
+    Local $tBuffer = 0, $bRecv = Binary("")
+
+    Local $iBytesRead = 0, $iBufferType = 3
+    Do
+        If $iBufferLen = 0 Then
+            $iError = $ERROR_NOT_ENOUGH_MEMORY
+            Return False
+        EndIf
+
+        $tBuffer = DllStructCreate("byte[" & $iBufferLen & "]")
+
+        $iError = _WinHttpWebSocketReceive($hWebSocket, _
+                $tBuffer, _
+                $iBytesRead, _
+                $iBufferType)
+        If @error Or $iError <> 0 Then
+            _Log($sLocation, "[ERROR] Unable to Recieve data from WebSocket: " & @error & " - " & $iError)
+            Return False
+        EndIf
+
+        ; Continue if not complete
+        $bRecv &= BinaryMid(DllStructGetData($tBuffer, 1), 1, $iBytesRead)
+        $tBuffer = 0
+
+        $iBufferLen -= $iBytesRead
+		;If TimerDiff($hTimer) > $iTimeout Then Return False
+    Until $iBufferType <> $WINHTTP_WEB_SOCKET_UTF8_FRAGMENT_BUFFER_TYPE
+
+    ; We expected server just to echo single binary message.
+
+    If $iBufferType <> $WINHTTP_WEB_SOCKET_UTF8_MESSAGE_BUFFER_TYPE Then
+		_Log($sLocation, "[ERROR] Unexpected buffer type from WebSocket")
+        $iError = $ERROR_INVALID_PARAMETER
+        Return False
+    EndIf
+
+	Return _HexToString($bRecv)
+
 EndFunc
 
 Func _SendData($hWebSocket, $sData) ; Why are you using this <_<
