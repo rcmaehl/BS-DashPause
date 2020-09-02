@@ -6,6 +6,8 @@ Pauses Dash Functions (Home, Screenshot, etc) while In Song | Requires [DataPull
 |---|---|---|---|---|
 | **See SteamVR** | *In Beta* | ❌ Not Compatible | ✔ **Working** | *In Beta*
 
+**Also Check Out MenuBuster for SteamVR:** https://github.com/rakso20000/MenuBuster
+
 ### Usage
 
 1. Install [DataPuller](https://github.com/kOFReadie/DataPuller/releases/)
