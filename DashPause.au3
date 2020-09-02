@@ -75,12 +75,12 @@ Func Main()
 					Case "0.0.1", "0.0.2", "0.0.3"
 						_Log($sLocation, "Found DataPuller Version <= 0.0.3, Linking to 127.0.0.1/BSDataPuller")
 						$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller")
-						If $hSocket = 0 Then Sleep(3000)
+						If $hSocket = 0 Then Sleep(5000)
 
 					Case Else
 						_Log($sLocation, "Found DataPuller Version >= 1.0, Linking to 127.0.0.1/BSDataPuller/LiveData")
 						$hSocket = _StartListener("127.0.0.1", 2946, "/BSDataPuller/LiveData")
-						If $hSocket = 0 Then Sleep(3000)
+						If $hSocket = 0 Then Sleep(5000)
 
 				EndSwitch
 				If Not $hSocket Then
@@ -90,6 +90,9 @@ Func Main()
 				TraySetToolTip("Connected")
 				$bRunning = True
 				ConsoleWrite($sLocation & @CRLF)
+
+			Case $hSocket = -1
+				ContinueCase
 
 			Case $hSocket <> 0 And Not ProcessExists("Beat Saber.exe")
 				TraySetToolTip("Disconnecting...")
@@ -103,35 +106,42 @@ Func Main()
 
 			Case $bRunning
 				$sData =  _ReceiveData($hSocket, $iTimeout)
-				If Not $sData Then ContinueLoop
-				If $bDev Then GUICtrlSetData($hData, $sData)
-				$bInLevel = _StringBetween($sData, '"InLevel": ', ",")[0]
-				$bLevelPaused = _StringBetween($sData, '"LevelPaused": ', ",")[0]
-				If $bInLevel = "true" And $bLevelPaused = "false" Then
-					If Not $bSuspended Then
-						ConsoleWrite("Suspending" & @CRLF)
-						_ProcessSuspend("Cortanalistenui.exe") ; WMR
-						_ProcessSuspend("DesktopView.exe") ; WMR
-						_ProcessSuspend("EnvironmentsApp.exe") ; WMR
-						_ProcessSuspend("OculusDash.exe") ; Oculus
-						_ProcessSuspend("VRCompositor.exe") ; SteamVR
-						_ProcessSuspend("VRDashboard.exe") ; SteamVR
-						_ProcessSuspend("VRServer.exe") ; SteamVR
-						$bSuspended = True
-					EndIf
-				ElseIf $bInLevel = "false" Then
-					If $bSuspended Then
-						ConsoleWrite("Resuming" & @CRLF)
-						_ProcessResume("Cortanalistenui.exe") ; WMR
-						_ProcessResume("DesktopView.exe") ; WMR
-						_ProcessResume("EnvironmentsApp.exe") ; WMR
-						_ProcessResume("OculusDash.exe") ; Oculus
-						_ProcessResume("VRCompositor.exe") ; SteamVR
-						_ProcessResume("VRDashboard.exe") ; SteamVR
-						_ProcessResume("VRServer.exe") ; SteamVR
-						$bSuspended = False
-					EndIf
-				EndIf
+				Switch $sData
+					Case -1
+						$hSocket = -1
+						ContinueLoop
+					Case 0
+						ContinueLoop
+					Case Else
+						If $bDev Then GUICtrlSetData($hData, $sData)
+						$bInLevel = _StringBetween($sData, '"InLevel": ', ",")[0]
+						$bLevelPaused = _StringBetween($sData, '"LevelPaused": ', ",")[0]
+						If $bInLevel = "true" And $bLevelPaused = "false" Then
+							If Not $bSuspended Then
+								ConsoleWrite("Suspending" & @CRLF)
+								_ProcessSuspend("Cortanalistenui.exe") ; WMR
+								_ProcessSuspend("DesktopView.exe") ; WMR
+								_ProcessSuspend("EnvironmentsApp.exe") ; WMR
+								_ProcessSuspend("OculusDash.exe") ; Oculus
+								_ProcessSuspend("VRCompositor.exe") ; SteamVR
+								_ProcessSuspend("VRDashboard.exe") ; SteamVR
+								_ProcessSuspend("VRServer.exe") ; SteamVR
+								$bSuspended = True
+							EndIf
+						ElseIf $bInLevel = "false" Then
+							If $bSuspended Then
+								ConsoleWrite("Resuming" & @CRLF)
+								_ProcessResume("Cortanalistenui.exe") ; WMR
+								_ProcessResume("DesktopView.exe") ; WMR
+								_ProcessResume("EnvironmentsApp.exe") ; WMR
+								_ProcessResume("OculusDash.exe") ; Oculus
+								_ProcessResume("VRCompositor.exe") ; SteamVR
+								_ProcessResume("VRDashboard.exe") ; SteamVR
+								_ProcessResume("VRServer.exe") ; SteamVR
+								$bSuspended = False
+							EndIf
+						EndIf
+				EndSwitch
 
 			Case Else
 				;;;
@@ -259,8 +269,13 @@ Func _ReceiveData($hWebSocket, $iTimeout)
                 $iBytesRead, _
                 $iBufferType)
         If @error Or $iError <> 0 Then
-            _Log($sLocation, "[ERROR] Unable to Recieve data from WebSocket: " & @error & " - " & $iError)
-            Return False
+			If $iError = $ERROR_WINHTTP_CONNECTION_ERROR Then
+				_Log($sLocation, "Socket Closed. Shutting down.")
+				Return -1
+			Else
+				_Log($sLocation, "[ERROR] Unable to Receive data from WebSocket: " & @error & " - " & @extended & " - " & $iError)
+				Return False
+			EndIf
         EndIf
 
         ; Continue if not complete
