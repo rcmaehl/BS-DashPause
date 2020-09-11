@@ -3,7 +3,7 @@
 #AutoIt3Wrapper_Icon=icon.ico
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=Compiled 8/28/2020 @ 19:15 EST
+#AutoIt3Wrapper_Res_Comment=Compiled 9/11/2020 @ 15:55 EST
 #AutoIt3Wrapper_Res_Description=Beat Saber Dash Pause
 #AutoIt3Wrapper_Res_Fileversion=0.4.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Robert Maehl, using LGPL 3 License
@@ -12,8 +12,8 @@
 #AutoIt3Wrapper_Run_Au3Stripper=y
 #Au3Stripper_Parameters=/pe /so
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#include "includes\WinHTTP.au3"
 
+#include <Misc.au3>
 #include <WinAPI.au3> ; _WinAPI_GetLastError
 #include <WinAPIProc.au3> ; _WinAPI_GetProcessFileName
 #include <String.au3> ; _HexToString
@@ -21,6 +21,10 @@
 #include <FileConstants.au3> ; _LogOpen(), FileGetVersion
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
+
+#include "includes\WinHTTP.au3"
+
+Opt("TrayMenuMode", 3)
 
 Global $sVer = "0.4"
 Global $sLocation = ""
@@ -47,19 +51,24 @@ Func Main()
 		GUISetState(@SW_SHOW, $hGUI)
 	EndIf
 
+	Local $hUpdate = TrayCreateItem("Check for Updates")
+	TrayCreateItem("")
+	Local $hExit = TrayCreateItem("Quit")
+
 	TraySetToolTip("DashPause")
 
 	While 1
 
 		$hMsg = GUIGetMsg()
+		$hTMsg = TrayGetMsg()
 
 		Select
 
-			Case $hMsg = $GUI_EVENT_CLOSE
+			Case $hMsg = $GUI_EVENT_CLOSE Or $hTMsg = $hExit
 				GUIDelete($hGUI)
 				Exit
 
-			Case ProcessExists("Beat Saber.exe") and $hSocket = 0
+			Case ProcessExists("Beat Saber.exe") And $hSocket = 0
 				TraySetToolTip("Connecting...")
 				If $sLocation <> StringReplace(_WinAPI_GetProcessFileName(ProcessExists("Beat Saber.exe")), "Beat Saber.exe", "") Then
 					$sLocation = StringReplace(_WinAPI_GetProcessFileName(ProcessExists("Beat Saber.exe")), "Beat Saber.exe", "")
@@ -143,12 +152,61 @@ Func Main()
 						EndIf
 				EndSwitch
 
+			Case $hTMsg = $hUpdate
+				Switch _GetLatestRelease($sVer)
+					Case -1
+						MsgBox($MB_OK+$MB_ICONWARNING+$MB_TOPMOST, "Test Build?", "You're running a newer build than publically available!")
+					Case 0
+						Switch @error
+							Case 0
+								MsgBox($MB_OK+$MB_ICONINFORMATION+$MB_TOPMOST, "Up to Date", "You're running the latest build!")
+							Case 1
+								MsgBox($MB_OK+$MB_ICONWARNING+$MB_TOPMOST, "Unable to Check for Updates", "Unable to load release data.")
+							Case 2
+								MsgBox($MB_OK+$MB_ICONWARNING+$MB_TOPMOST, "Unable to Check for Updates", "Invalid Data Received!")
+							Case 3
+								Switch @extended
+									Case 0
+										MsgBox($MB_OK+$MB_ICONWARNING+$MB_TOPMOST, "Unable to Check for Updates", "Invalid Release Tags Received!")
+									Case 1
+										MsgBox($MB_OK+$MB_ICONWARNING+$MB_TOPMOST, "Unable to Check for Updates", "Invalid Release Types Received!")
+								EndSwitch
+						EndSwitch
+					Case 1
+						If MsgBox($MB_YESNO+$MB_ICONINFORMATION+$MB_TOPMOST, "Update Available", "An Update is Availabe, would you like to download it?") = $IDYES Then ShellExecute("https://github.com/rcmaehl/BS-DashPause/releases/")
+				EndSwitch
+
 			Case Else
 				;;;
 
 		EndSelect
 
 	WEnd
+
+EndFunc
+
+Func _GetLatestRelease($sCurrent)
+
+	Local $dAPIBin
+	Local $sAPIJSON
+
+	$dAPIBin = InetRead("https://api.github.com/repos/rcmaehl/BS-DashPause/releases")
+	If @error Then Return SetError(1, 0, 0)
+	$sAPIJSON = BinaryToString($dAPIBin)
+	If @error Then Return SetError(2, 0, 0)
+
+	Local $aReleases = _StringBetween($sAPIJSON, '"tag_name":"', '",')
+	If @error Then Return SetError(3, 0, 0)
+	Local $aRelTypes = _StringBetween($sAPIJSON, '"prerelease":', ',')
+	If @error Then Return SetError(3, 1, 0)
+	Local $aCombined[UBound($aReleases)][2]
+
+	For $iLoop = 0 To UBound($aReleases) - 1 Step 1
+		$aCombined[$iLoop][0] = $aReleases[$iLoop]
+		$aCombined[$iLoop][1] = $aRelTypes[$iLoop]
+	Next
+
+	Return _VersionCompare($aCombined[0][0], $sCurrent)
 
 EndFunc
 
