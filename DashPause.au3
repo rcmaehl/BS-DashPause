@@ -34,7 +34,7 @@ Main()
 
 Func Main()
 
-	Local $bDev = False
+	Local $bDev = True
 	Local $sData = ""
 	Local $hSocket = 0
 	Local $iTimeout = 500
@@ -266,10 +266,10 @@ EndFunc
 Func _ProcessSuspend($sProcess)
 	$iPID = ProcessExists($sProcess)
 	If $iPID Then
-		$ai_Handle = DllCall("kernel32.dll", 'int', 'OpenProcess', 'int', 0x1f0fff, 'int', False, 'int', $iPID)
-		$i_success = DllCall("ntdll.dll","int","NtSuspendProcess","int",$ai_Handle[0])
-		DllCall('kernel32.dll', 'ptr', 'CloseHandle', 'ptr', $ai_Handle)
-		If IsArray($i_success) Then
+		$hProcess = _WinAPI_OpenProcess($PROCESS_SUSPEND_RESUME, False, $iPID)
+		$iSuccess = DllCall("ntdll.dll", "int", "NtSuspendProcess", "int", $hProcess)
+		_WinAPI_CloseHandle($hProcess)
+		If IsArray($iSuccess) Then
 			Return 1
 		Else
 			SetError(1)
@@ -284,10 +284,10 @@ EndFunc
 Func _ProcessResume($sProcess)
 	$iPID = ProcessExists($sProcess)
 	If $iPID Then
-		$ai_Handle = DllCall("kernel32.dll", 'int', 'OpenProcess', 'int', 0x1f0fff, 'int', False, 'int', $iPID)
-		$i_success = DllCall("ntdll.dll","int","NtResumeProcess","int",$ai_Handle[0])
-		DllCall('kernel32.dll', 'ptr', 'CloseHandle', 'ptr', $ai_Handle)
-		If IsArray($i_success) Then
+		$hProcess = _WinAPI_OpenProcess($PROCESS_SUSPEND_RESUME, False, $iPID)
+		$iSuccess = DllCall("ntdll.dll", "int", "NtResumeProcess", "int", $hProcess)
+		_WinAPI_CloseHandle($hProcess)
+		If IsArray($iSuccess) Then
 			Return 1
 		Else
 			SetError(1)
@@ -421,6 +421,7 @@ Func _StartListener($sIP = "127.0.0.1", $iPort = 1337, $sPath = "")
         _Log($sLocation, "[ERROR] Unable to Complete WebSocket handshake")
         Return False
     EndIf
+
 
     ; Application should check what is the HTTP status code returned by the server and behave accordingly.
     ; WinHttpWebSocketCompleteUpgrade will fail if the HTTP status code is different than 101.
