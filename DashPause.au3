@@ -14,6 +14,8 @@
 #Au3Stripper_Parameters=/pe /so
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
+FileChangeDir(@SystemDir)
+
 #include <Misc.au3>
 #include <WinAPI.au3> ; _WinAPI_GetLastError
 #include <WinAPIProc.au3> ; _WinAPI_GetProcessFileName
